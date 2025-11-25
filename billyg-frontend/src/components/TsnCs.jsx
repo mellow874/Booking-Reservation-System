@@ -1,24 +1,26 @@
-import react from "react";
+import React, { useState } from "react";
 import { ChevronRight, ChevronDown } from "lucide-react";
 
 export default function TsnCs() {
   const [expanded, setExpanded] = useState(false);
 
   return (
-    <div className='w-full max-w-xl mx-auto flex items-center justify-between'>
+    <div className='w-full flex flex-col items-center'>
       {/* Trigger Bar */}
       <div
         onClick={() => setExpanded((curr) => !curr)}
-        className='flex items-center justify-between bg-rose-700 text-white font-bold px-4 py-3 cursor-pointer rounded-md'
+        className=' w-full bg-rose-700 text-white font-bold px-4 py-3 cursor-pointer'
       >
-        <span>TERMS AND CONDITIONS</span>
-        {expanded ? <ChevronDown size={20} /> : <ChevronRight size={20} />}
+        <span className='flex justify-center'>TERMS AND CONDITIONS
+          {expanded ? <ChevronDown size={20}  /> : <ChevronRight size={20}  />}
+        </span>
+        
       </div>
 
       {/* Content */}
       {expanded && (
-        <div className='bg-white text-black p-4 mt-2 rounded-md shadow-md border border-gray-200'>
-          <ol className='list-decimal ml-6 space-y-1'>
+        <div className=' text-black p-4 mt-2'>
+          <ol className='list-decimal list-inside mx-auto text-center space-y-1 max-w-[90%]'>
             <li>Rewards card discount applicable to the cardholder plus one guest.</li>
             <li>One free child only per one standard adult buffet.</li>
             <li>Rewards discounts are not applicable to Children’s & Pensioners already discounted rates.</li>
@@ -38,7 +40,6 @@ deposit of the full invoice amount has been paid and received by the Billy G res
             <li>The restaurant will only be able to accommodate Walk- In Guests should there be cancellations of confirmed bookings or restaurant seating availability upon arrival.</li>
             <li>It is your choice as a valued guest to remain on the waiting list for a possible opening. The restaurant cannot be held liable if there is no availability, or no cancellations.</li>
             <li>The waiting list will be accommodated on a first come, first served basis, provided there is availability.</li>
-            {/* Add more as needed */}
           </ol>
         </div>
       )}
