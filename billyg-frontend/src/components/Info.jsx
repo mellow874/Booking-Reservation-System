@@ -110,7 +110,7 @@ export default function Info() {
 
 
       {/* BOOK NOW Button */}
-      <Link path='/'>
+      <Link to='/reservation-date'>
       <button className='bg-rose-700 text-white px-6 py-3 mt-6 rounded-lg font-bold shadow flex gap-2'>
         <CalendarDays />
         BOOK NOW
