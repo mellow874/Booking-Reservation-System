@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { ChevronRight, ChevronDown, CalendarDays } from "lucide-react";
+import {Link} from 'react-router-dom'
 
 export default function Info() {
   const [expanded, setExpanded] = useState(false);
@@ -109,10 +110,12 @@ export default function Info() {
 
 
       {/* BOOK NOW Button */}
+      <Link path='/'>
       <button className='bg-rose-700 text-white px-6 py-3 mt-6 rounded-lg font-bold shadow flex gap-2'>
         <CalendarDays />
         BOOK NOW
       </button>
+      </Link>
 
       {/* Powered by link */}
       <a
