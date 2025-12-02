@@ -112,7 +112,7 @@ export default function FormDetail({onNext, onBack}) {
             onClick={onBack} 
             className='bg-blue-500 hover:bg-blue-600 text-white p-2 w-full rounded-lg'>Back</button>
             </Link>
-            <Link to='/confirmation/'>
+            <Link to='/confirmation'>
             <button
             onClick={onNext}
             className='bg-green-500 text-white hover:bg-green-600 p-2 w-full rounded-lg'>Next</button>
