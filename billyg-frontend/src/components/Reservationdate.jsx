@@ -215,6 +215,8 @@ export default function Reservationdate() {
           Enter your details →
         </div>
         </Link>
+        <Link to='/'>
+        <div  className='w-100 mt-4 rounded-2xl py-4 text-lg text-center bg-sky-500 hover:bg-sky-600 text-white cursor-pointer'>Back</div></Link>
         </div>
 
       </div>

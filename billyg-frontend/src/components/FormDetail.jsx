@@ -30,6 +30,7 @@ export default function FormDetail({onNext, onBack}) {
   /* Checks if user completed the previous page
   if not, redirects to the previous page */
   useEffect(() => {
+    
     if (!reservationData.date || !reservationData.people || !reservationData.time || !reservationData.seat) {
       alert('Please complete the reservation date form first.');
       navigate("/");
@@ -84,7 +85,6 @@ export default function FormDetail({onNext, onBack}) {
                 className='bg-white p-3 rounded-xl h-24 col-span-1'></textarea>
                 <input type='email' placeholder='Confirm Email Address' value={confirmationEmail} onChange={(e) => setConfirmationEmail(e.target.value)} className='bg-white p-2' required/>  
         </div>
-
         {/* Special updates */}
         <div className='grid grid-cols-2 gap-2 mt-4'>
             <p>I'd like to receive updates & special offers from:</p>

@@ -66,7 +66,7 @@ async function handleBooking() {
   return (
     <div className='bg-gray-100 shadow-lg w-full max-w-4xl p-6 rounded-2xl'>
         {/* Top Heading */}
-        <div className='bg-yellow-800 p-4 rounded-lg text-white mb-4'>Check your reservation details</div>
+        <div className='bg-yellow-800 p-4 rounded-lg text-white mb-4y'>Check your reservation details</div>
 
         {/* Two Columns */}
         <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
