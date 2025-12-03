@@ -157,7 +157,7 @@ export default function Confirmation() {
 
       {/* GO BACK BUTTON */}
       <Link
-        to="/booking"
+        to="/details"
         className="block mt-3 text-center text-neutral-300 hover:underline"
       >
         Go Back & Edit
