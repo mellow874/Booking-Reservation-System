@@ -1,27 +1,31 @@
 import { useEffect, useState } from "react";
-import { Watch } from "lucide-react"; // Clock icon
-import { Link, useNavigate } from "react-router-dom"; // Navigation and links
-import { useBooking } from "./Booking"; // Custom hook for shared booking state
-import CalendarMonthIcon from "@mui/icons-material/CalendarMonth"; // Calendar icon
-import EmailIcon from "@mui/icons-material/Email"; // Email icon
-import Diversity3Icon from "@mui/icons-material/Diversity3"; // People icon
-import PersonIcon from "@mui/icons-material/Person"; // Person icon
-import CallIcon from "@mui/icons-material/Call"; // Phone icon
-import ChairIcon from "@mui/icons-material/Chair"; // Chair icon
+import { Watch } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useBooking } from "./Booking";
 
-// Custom hook for submitting booking data to backend
+// Icons
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import EmailIcon from "@mui/icons-material/Email";
+import Diversity3Icon from "@mui/icons-material/Diversity3";
+import PersonIcon from "@mui/icons-material/Person";
+import CallIcon from "@mui/icons-material/Call";
+import ChairIcon from "@mui/icons-material/Chair";
+
+/* Sumbits booking to backend */
 function useBookingSubmit() {
-  const { reservationData } = useBooking(); // Get reservation data from global context
-  const [loading, setLoading] = useState(false); // Track loading state
+  const { reservationData } = useBooking();
+  const [loading, setLoading] = useState(false);
 
-  // Function to submit booking to backend
+  // Submit booking to backend API
   async function submitBooking() {
-    setLoading(true); // Start loading
+    setLoading(true);
+
     try {
-      // Send POST request to backend
       const response = await fetch("http://localhost:5000/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+
+        // Attach all user booking details to request body
         body: JSON.stringify({
           booking_date: reservationData.date,
           booking_time: reservationData.time,
@@ -34,190 +38,130 @@ function useBookingSubmit() {
         }),
       });
 
-      // Throw error if request failed
-      if (!response.ok) throw new Error("Booking failed");
+      const data = await response.json();
 
-      const data = await response.json(); // Parse JSON response
-      setLoading(false); // Stop loading
-      return data; // Return booking confirmation data
+      // Handle backend validation errors
+      if (!response.ok) {
+        alert("Booking failed: " + data.error);
+        setLoading(false);
+        return null;
+      }
+
+      // Return new booking object from backend
+      return data.booking;
     } catch (err) {
-      setLoading(false); // Stop loading on error
-      throw err; // Propagate error
+      console.error(err);
+      alert("Failed to connect to server.");
+      return null;
+    } finally {
+      setLoading(false);
     }
   }
 
   return { submitBooking, loading };
 }
 
+/* Displays bookign details, confirmation and save button */
 export default function Confirmation() {
-  const { reservationData } = useBooking(); // Access reservation data
-  const navigate = useNavigate(); // React Router navigation
-  const { submitBooking, loading } = useBookingSubmit(); // Custom submit hook
+  const { reservationData } = useBooking();
+  const { submitBooking, loading } = useBookingSubmit();
+  const navigate = useNavigate();
 
-  const [termsAccepted, setTermsAccepted] = useState(false); // Track checkbox
-  const [submitted, setSubmitted] = useState(false); // Track submission state
-  const [confirmationCode, setConfirmationCode] = useState(null); // Store booking ID
-  const [error, setError] = useState(null); // Store submission errors
+  // Stores backend response booking object
+  const [savedBooking, setSavedBooking] = useState(null);
 
-  // Redirect user if previous forms are not completed
-  useEffect(() => {
-    if (
-      !reservationData.date ||
-      !reservationData.people ||
-      !reservationData.time ||
-      !reservationData.seat ||
-      !reservationData.fullname ||
-      !reservationData.email
-    ) {
-      alert("Please complete all previous forms first.");
-      navigate("/"); // Redirect to home
-    }
-  }, [reservationData, navigate]);
+  /*Handle booking confirm button  */
+  async function handleConfirm() {
+    const booking = await submitBooking();
 
-  // Go back to previous step
-  function onBack() {
-    navigate("/details");
-  }
+    if (booking) {
+      setSavedBooking(booking);
+      alert("Booking successfully saved!");
 
-  // Handle booking submission
-  async function handleBooking() {
-    if (!termsAccepted) {
-      alert("Please accept the terms and conditions");
-      return;
-    }
-
-    try {
-      const result = await submitBooking(); // Call backend
-      setConfirmationCode(result.booking?.id || "N/A"); // Store confirmation code
-      setSubmitted(true); // Mark as submitted
-    } catch (err) {
-      console.error("Booking failed:", err);
-      setError("Failed to submit booking. Please try again."); // Display error
+      // Redirect to final success screen or homepage
+      navigate("/success");
     }
   }
 
   return (
-    <div className="bg-gray-100 shadow-lg w-full max-w-4xl p-6 rounded-2xl">
-      {!submitted ? (
-        <>
-          {/* Warning / Info box */}
-          <div className="bg-yellow-800 p-4 rounded-lg text-white mb-4">
-            Check your reservation details
-          </div>
+    <div className="p-5 max-w-2xl mx-auto text-white">
+      {/* PAGE HEADING */}
+      <h1 className="text-3xl font-semibold mb-4">Confirm Your Reservation</h1>
+      <p className="text-neutral-300 mb-6">
+        Review your details below and click <strong>Confirm & Save</strong> to
+        finalize your booking.
+      </p>
 
-          {/* Reservation summary grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Left Column: Reservation info */}
-            <div className="border border-gray-300 gap-4 bg-white rounded-lg p-4">
-              <div className="text-lg mb-3">Billy G Montecasino</div>
-              <hr className="text-gray-400 mb-4" />
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarMonthIcon />
-                <span>{reservationData.date}</span>
-              </div>
-              <div className="flex items-center gap-3 mb-2">
-                <Diversity3Icon />
-                <span>{reservationData.people}</span>
-                at <Watch />
-                <span>{reservationData.time}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <ChairIcon />
-                <span>Preferred seating:</span>
-                <span>{reservationData.seat}</span>
-              </div>
-            </div>
-
-            {/* Right Column: Customer details */}
-            <div className="border border-gray-300 gap-4 bg-white rounded-lg p-4">
-              <div className="text-lg mb-3">Your Details</div>
-              <hr className="text-gray-400 mb-4" />
-              <div className="flex items-center gap-3 mb-2">
-                <PersonIcon />
-                <span>{reservationData.fullname}</span>
-              </div>
-              <div className="flex items-center gap-3 mb-2">
-                <CallIcon />
-                <span>{reservationData.phone}</span>
-              </div>
-              <div className="flex items-center gap-3 mb-2">
-                <EmailIcon />
-                <span>{reservationData.email}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span>{reservationData.notes}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Terms and conditions checkbox */}
-          <label className="flex items-center gap-2 mt-4">
-            <input
-              type="checkbox"
-              checked={termsAccepted}
-              onChange={(e) => setTermsAccepted(e.target.checked)}
-              required
-              className="cursor-pointer"
-            />
-            <span>
-              I agree and consent to the
-              <a
-                href="https://www.dineplan.com/terms/user"
-                className="text-blue-500 ml-1"
-              >
-                Terms and Conditions
-              </a>
-              and
-              <a
-                href="https://www.dineplan.com/terms/privacy"
-                className="text-blue-500 ml-1"
-              >
-                Privacy Policy
-              </a>
-            </span>
-          </label>
-
-          {error && <p className="text-red-500 mt-2">{error}</p>}
-
-          {/* Buttons */}
-          <div className="flex flex-col md:flex-row justify-center gap-4 mt-4">
-            <button
-              onClick={onBack}
-              disabled={loading}
-              className="bg-blue-500 hover:bg-blue-600 text-white p-2 w-full md:w-auto rounded-lg"
-            >
-              Back
-            </button>
-
-            <button
-              onClick={handleBooking}
-              disabled={loading || !termsAccepted}
-              className="bg-green-500 text-white hover:bg-green-600 p-2 w-full md:w-auto rounded-lg"
-            >
-              {loading ? "Submitting..." : "Confirm and Save"}
-            </button>
-          </div>
-        </>
-      ) : (
-        // Booking confirmation screen
-        <div className="bg-white p-6 rounded-lg text-center shadow-md">
-          <h2 className="text-2xl font-bold mb-4 text-green-600">
-            Booking Confirmed!
-          </h2>
-          <p className="mb-2">
-            Thank you, {reservationData.fullname}. Your booking has been
-            successfully submitted.
-          </p>
-          <p className="mb-4">
-            Confirmation code: <strong>{confirmationCode}</strong>
-          </p>
-          <Link to="/">
-            <button className="bg-blue-500 text-white hover:bg-blue-600 p-2 rounded-lg">
-              Return Home
-            </button>
-          </Link>
+      {/* BOOKING DETAILS CARD */}
+      <div className="bg-neutral-700 p-5 rounded-xl space-y-4 shadow-lg">
+        {/* DATE */}
+        <div className="flex items-center gap-3">
+          <CalendarMonthIcon />
+          <span>Date: {reservationData.date}</span>
         </div>
-      )}
+
+        {/* TIME */}
+        <div className="flex items-center gap-3">
+          <Watch />
+          <span>Time: {reservationData.time}</span>
+        </div>
+
+        {/* GUEST COUNT */}
+        <div className="flex items-center gap-3">
+          <Diversity3Icon />
+          <span>Guests: {reservationData.people}</span>
+        </div>
+
+        {/* SEATING AREA */}
+        <div className="flex items-center gap-3">
+          <ChairIcon />
+          <span>Seating Area: {reservationData.seat}</span>
+        </div>
+
+        {/* FULL NAME */}
+        <div className="flex items-center gap-3">
+          <PersonIcon />
+          <span>Name: {reservationData.fullname}</span>
+        </div>
+
+        {/* EMAIL */}
+        <div className="flex items-center gap-3">
+          <EmailIcon />
+          <span>Email: {reservationData.email}</span>
+        </div>
+
+        {/* PHONE */}
+        <div className="flex items-center gap-3">
+          <CallIcon />
+          <span>Phone: {reservationData.phone}</span>
+        </div>
+
+        {/* NOTES / SPECIAL REQUESTS */}
+        {reservationData.notes && (
+          <div className="mt-4">
+            <p className="text-neutral-300">Special Requests:</p>
+            <p className="italic">{reservationData.notes}</p>
+          </div>
+        )}
+      </div>
+
+      {/* CONFIRM BUTTON */}
+      <button
+        onClick={handleConfirm}
+        disabled={loading}
+        className="mt-6 w-full bg-green-600 hover:bg-green-700 disabled:bg-neutral-500 
+    text-white py-3 rounded-xl font-semibold transition-all"
+      >
+        {loading ? "Saving..." : "Confirm & Save Booking"}
+      </button>
+
+      {/* GO BACK BUTTON */}
+      <Link
+        to="/booking"
+        className="block mt-3 text-center text-neutral-300 hover:underline"
+      >
+        Go Back & Edit
+      </Link>
     </div>
   );
 }

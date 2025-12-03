@@ -1,13 +1,20 @@
+//This files includes the routes for booking, slot availability and cancellation of booking
+//This file communicates with my supabase file
+
 import express from "express";
-import { supabase } from "./supabase.js"; // Supabase client instance
+import { supabase } from "./supabase.js";
 
-const router = express.Router(); // Create Express router
+const router = express.Router();
 
-// ---------------------------
-// Constants for reservations
-// ---------------------------
-const AVAILABLE_TIMES = ["17:00", "18:00", "19:00"]; // Allowed booking times
-const SEATING_AREAS = ["Patio", "Restaurant Left", "Restaurant Right", "Couches", "Buffet"];
+/* -Sets available timeslots, seating areas and capacity limits */
+const AVAILABLE_TIMES = ["17:00", "18:00", "19:00"];
+const SEATING_AREAS = [
+  "Patio",
+  "Restaurant Left",
+  "Restaurant Right",
+  "Couches",
+  "Buffet",
+];
 const SEATING_CAPACITY = {
   Patio: 20,
   "Restaurant Left": 30,
@@ -16,28 +23,29 @@ const SEATING_CAPACITY = {
   Buffet: 25,
 };
 
-// ---------------------------
-// Helper functions
-// ---------------------------
-
-// Extract number of guests from string like "2 people"
+/* Extracts guests from text(e.g., '2guests') */
 function extractGuestCount(guestsString) {
   const match = guestsString.match(/(\d+)/);
   return match ? parseInt(match[1]) : 0;
 }
 
-// Check if a date is valid for booking
+/*- Validates the date
+-Blocks past dates, weekends and fully booked dates
+   */
 function isDateAvailable(dateString) {
   const date = new Date(dateString);
   const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset time
+  today.setHours(0, 0, 0, 0);
 
+  // Cannot book past dates
   if (date < today) return { available: false, reason: "Date is in the past" };
 
+  // Restaurant closed on weekends
   const dayOfWeek = date.getDay();
   if (dayOfWeek === 0 || dayOfWeek === 6)
     return { available: false, reason: "Restaurant closed on weekends" };
 
+  // Fully booked days you decide manually
   const fullyBookedDates = ["Thu Nov 28 2025"];
   if (fullyBookedDates.includes(date.toDateString()))
     return { available: false, reason: "Fully booked" };
@@ -45,22 +53,25 @@ function isDateAvailable(dateString) {
   return { available: true };
 }
 
-// ---------------------------
-// Routes
-// ---------------------------
-
-// GET /slots - check available times for a seating area
+/* Returns available time slots and the number of seats available */
 router.get("/slots", async (req, res) => {
   try {
     const { date, seatingArea } = req.query;
-    if (!date || !seatingArea) return res.status(400).json({ error: "Missing required parameters" });
-    if (!SEATING_AREAS.includes(seatingArea)) return res.status(400).json({ error: "Invalid seating area" });
+
+    // Validate required parameters
+    if (!date || !seatingArea)
+      return res.status(400).json({ error: "Missing required parameters" });
+
+    if (!SEATING_AREAS.includes(seatingArea))
+      return res.status(400).json({ error: "Invalid seating area" });
 
     const dateCheck = isDateAvailable(date);
     if (!dateCheck.available)
-      return res.status(400).json({ error: dateCheck.reason, availableSlots: [] });
+      return res
+        .status(400)
+        .json({ error: dateCheck.reason, availableSlots: [] });
 
-    // Fetch confirmed bookings from Supabase
+    // Fetch confirmed bookings for the specific date + seating area
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
@@ -68,18 +79,28 @@ router.get("/slots", async (req, res) => {
       .eq("seating_preference", seatingArea)
       .eq("status", "confirmed");
 
-    if (error) return res.status(500).json({ error: "Failed to fetch bookings" });
+    if (error)
+      return res.status(500).json({ error: "Failed to fetch bookings" });
 
-    // Calculate remaining capacity for each time slot
+    // Loop through each available time slot and compute capacity
     const availableSlots = AVAILABLE_TIMES.map((time) => {
       const timeBookings = bookings.filter((b) => b.booking_time === time);
+
+      // Total guests already booked for this slot
       const bookedGuests = timeBookings.reduce(
         (sum, booking) => sum + extractGuestCount(booking.number_of_guests),
         0
       );
+
       const maxCapacity = SEATING_CAPACITY[seatingArea];
       const remainingCapacity = Math.max(0, maxCapacity - bookedGuests);
-      return { time, available: remainingCapacity > 0, remainingCapacity, maxCapacity };
+
+      return {
+        time,
+        available: remainingCapacity > 0,
+        remainingCapacity,
+        maxCapacity,
+      };
     });
 
     res.json({ date, seatingArea, slots: availableSlots });
@@ -89,7 +110,7 @@ router.get("/slots", async (req, res) => {
   }
 });
 
-// POST /bookings - create a new booking
+/* Creates a new bookin and notifies backend  */
 router.post("/bookings", async (req, res) => {
   try {
     const {
@@ -103,7 +124,7 @@ router.post("/bookings", async (req, res) => {
       special_requests,
     } = req.body;
 
-    // Validate required fields
+    // Validate input fields
     if (
       !booking_date ||
       !booking_time ||
@@ -115,15 +136,18 @@ router.post("/bookings", async (req, res) => {
     )
       return res.status(400).json({ error: "Missing required fields" });
 
-    // Validate time & seating
-    if (!AVAILABLE_TIMES.includes(booking_time)) return res.status(400).json({ error: "Invalid time slot" });
-    if (!SEATING_AREAS.includes(seating_preference)) return res.status(400).json({ error: "Invalid seating area" });
+    if (!AVAILABLE_TIMES.includes(booking_time))
+      return res.status(400).json({ error: "Invalid time slot" });
 
-    // Validate date
+    if (!SEATING_AREAS.includes(seating_preference))
+      return res.status(400).json({ error: "Invalid seating area" });
+
+    // Check if booking date is valid
     const dateCheck = isDateAvailable(booking_date);
-    if (!dateCheck.available) return res.status(400).json({ error: dateCheck.reason });
+    if (!dateCheck.available)
+      return res.status(400).json({ error: dateCheck.reason });
 
-    // Check existing bookings for this time & seating
+    // Find existing bookings to check capacity
     const { data: existingBookings, error: fetchError } = await supabase
       .from("bookings")
       .select("number_of_guests")
@@ -132,19 +156,27 @@ router.post("/bookings", async (req, res) => {
       .eq("seating_preference", seating_preference)
       .eq("status", "confirmed");
 
-    if (fetchError) return res.status(500).json({ error: "Failed to check availability" });
+    if (fetchError)
+      return res.status(500).json({ error: "Failed to check availability" });
 
+    // Calculate capacity
     const currentGuests = existingBookings.reduce(
       (sum, b) => sum + extractGuestCount(b.number_of_guests),
       0
     );
+
     const requestedGuests = extractGuestCount(number_of_guests);
     const maxCapacity = SEATING_CAPACITY[seating_preference];
 
     if (currentGuests + requestedGuests > maxCapacity)
-      return res.status(409).json({ error: "Not enough capacity", available: maxCapacity - currentGuests });
+      return res
+        .status(409)
+        .json({
+          error: "Not enough capacity",
+          available: maxCapacity - currentGuests,
+        });
 
-    // Insert new booking
+    // Insert booking into database
     const { data: newBooking, error: insertError } = await supabase
       .from("bookings")
       .insert([
@@ -163,7 +195,14 @@ router.post("/bookings", async (req, res) => {
       .select()
       .single();
 
-    if (insertError) return res.status(500).json({ error: "Failed to create booking" });
+    if (insertError)
+      return res.status(500).json({ error: "Failed to create booking" });
+
+  
+    // Alerts when a booking is made
+    
+    console.log("📩 NEW BOOKING RECEIVED:", newBooking);
+
 
     res.status(201).json({ message: "Booking created", booking: newBooking });
   } catch (error) {
@@ -172,23 +211,36 @@ router.post("/bookings", async (req, res) => {
   }
 });
 
-// DELETE /bookings/:id - cancel a booking
+/* Delete bookings/id
+-Cancels a booking
+ */
 router.delete("/bookings/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(id)) return res.status(400).json({ error: "Invalid booking ID" });
 
+    //Validate UUID format
+     
+    const uuidRegex =
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+    if (!uuidRegex.test(id))
+      return res.status(400).json({ error: "Invalid booking ID" });
+
+    // Check if booking exists
     const { data: existingBooking, error: fetchError } = await supabase
       .from("bookings")
       .select("*")
       .eq("id", id)
       .maybeSingle();
 
-    if (fetchError) return res.status(500).json({ error: "Failed to fetch booking" });
-    if (!existingBooking) return res.status(404).json({ error: "Booking not found" });
-    if (existingBooking.status === "cancelled") return res.status(400).json({ error: "Booking already cancelled" });
+    if (fetchError)
+      return res.status(500).json({ error: "Failed to fetch booking" });
+    if (!existingBooking)
+      return res.status(404).json({ error: "Booking not found" });
+    if (existingBooking.status === "cancelled")
+      return res.status(400).json({ error: "Booking already cancelled" });
 
+    // Update status
     const { data: updatedBooking, error: updateError } = await supabase
       .from("bookings")
       .update({ status: "cancelled" })
@@ -196,7 +248,12 @@ router.delete("/bookings/:id", async (req, res) => {
       .select()
       .single();
 
-    if (updateError) return res.status(500).json({ error: "Failed to cancel booking" });
+    if (updateError)
+      return res.status(500).json({ error: "Failed to cancel booking" });
+
+    // Alert booking when cancelled
+    console.log("❌ BOOKING CANCELLED:", updatedBooking);
+  
 
     res.json({ message: "Booking cancelled", booking: updatedBooking });
   } catch (error) {
@@ -205,7 +262,7 @@ router.delete("/bookings/:id", async (req, res) => {
   }
 });
 
-// GET /health - simple server health check
+/* Health check route */
 router.get("/health", (req, res) => {
   res.json({ status: "OK", message: "Server running", timestamp: new Date() });
 });
