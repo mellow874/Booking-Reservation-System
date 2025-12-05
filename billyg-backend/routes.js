@@ -75,22 +75,33 @@ router.get("/slots", async (req, res) => {
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
-      .eq("booking_date", date)
       .eq("seating_preference", seatingArea)
-      .eq("status", "confirmed");
+      .eq("status", "confirmed")
+      .gte("booking_date", date)
+      .lte("booking_date", date);
 
-    if (error)
+    if (error) {
+      console.error("Supabase error fetching bookings:", error);
       return res.status(500).json({ error: "Failed to fetch bookings" });
+    }
 
     // Loop through each available time slot and compute capacity
     const availableSlots = AVAILABLE_TIMES.map((time) => {
-      const timeBookings = bookings.filter((b) => b.booking_time === time);
+      const timeBookings = bookings?.filter(
+        (b) => b.booking_time === time
+      ) || [];
 
       // Total guests already booked for this slot
-      const bookedGuests = timeBookings.reduce(
-        (sum, booking) => sum + extractGuestCount(booking.number_of_guests),
-        0
-      );
+      const bookedGuests = timeBookings.reduce((sum, booking) => {
+        let count = 0;
+        if (typeof booking.number_of_guests === "string") {
+          const match = booking.number_of_guests.match(/\d+/);
+          count = match ? parseInt(match[0]) : 0;
+        } else if (typeof booking.number_of_guests === "number") {
+          count = booking.number_of_guests;
+        }
+        return sum + count;
+      }, 0);
 
       const maxCapacity = SEATING_CAPACITY[seatingArea];
       const remainingCapacity = Math.max(0, maxCapacity - bookedGuests);
@@ -105,7 +116,7 @@ router.get("/slots", async (req, res) => {
 
     res.json({ date, seatingArea, slots: availableSlots });
   } catch (error) {
-    console.error(error);
+    console.error("Error in /slots:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
