@@ -57,7 +57,7 @@ function isDateAvailable(dateString) {
 router.get("/slots", async (req, res) => {
   try {
     const { date, seatingArea } = req.query;
-    console.log("Slots request:", req.query);
+    console.log("Slots request params:", req.query);
 
     if (!date || !seatingArea)
       return res.status(400).json({ error: "Missing required parameters" });
@@ -67,9 +67,11 @@ router.get("/slots", async (req, res) => {
 
     const dateCheck = isDateAvailable(date);
     if (!dateCheck.available)
-      return res.status(400).json({ error: dateCheck.reason, availableSlots: [] });
+      return res
+        .status(400)
+        .json({ error: dateCheck.reason, availableSlots: [] });
 
-    // Fetch bookings for the date
+    // Fetch confirmed bookings for that date and seating area
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
@@ -78,7 +80,7 @@ router.get("/slots", async (req, res) => {
       .gte("booking_date", date)
       .lte("booking_date", date);
 
-    console.log("Bookings data:", bookings, "Supabase error:", error);
+    console.log("Bookings fetched:", bookings, "Error:", error);
 
     if (error) return res.status(500).json({ error: "Failed to fetch bookings" });
 
@@ -113,6 +115,7 @@ router.get("/slots", async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 /* Creates a new bookin and notifies backend  */
