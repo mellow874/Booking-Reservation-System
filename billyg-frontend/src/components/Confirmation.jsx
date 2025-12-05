@@ -21,6 +21,23 @@ function useBookingSubmit() {
     setLoading(true); // Start loading animation
 
     try {
+      // --- Check availability before submitting ---
+      const slotResponse = await fetch(
+        `https://booking-reservation-system.onrender.com/api/slots?date=${new Date(reservationData.date).toISOString().split("T")[0]}&seatingArea=${reservationData.seat}`
+      );
+      const slotData = await slotResponse.json();
+
+      // Find the selected time slot
+      const selectedSlot = slotData.slots?.find(s => s.time === reservationData.time);
+
+      // If the slot is unavailable, alert and stop submission
+      if (!selectedSlot || !selectedSlot.available) {
+        alert(`The selected time slot (${reservationData.time}) is no longer available. Please choose another time.`);
+        setLoading(false);
+        return null;
+      }
+
+      // --- Proceed with actual booking POST ---
       const response = await fetch(
         "https://booking-reservation-system.onrender.com/api/bookings",
         {

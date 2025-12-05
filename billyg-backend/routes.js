@@ -252,7 +252,7 @@ router.delete("/bookings/:id", async (req, res) => {
       return res.status(500).json({ error: "Failed to cancel booking" });
 
     // Alert booking when cancelled
-    console.log("❌ BOOKING CANCELLED:", updatedBooking);
+    console.log("BOOKING CANCELLED:", updatedBooking);
   
 
     res.json({ message: "Booking cancelled", booking: updatedBooking });
