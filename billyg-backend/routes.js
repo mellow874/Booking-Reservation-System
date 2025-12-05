@@ -57,8 +57,8 @@ function isDateAvailable(dateString) {
 router.get("/slots", async (req, res) => {
   try {
     const { date, seatingArea } = req.query;
+    console.log("Slots request:", req.query);
 
-    // Validate required parameters
     if (!date || !seatingArea)
       return res.status(400).json({ error: "Missing required parameters" });
 
@@ -67,11 +67,9 @@ router.get("/slots", async (req, res) => {
 
     const dateCheck = isDateAvailable(date);
     if (!dateCheck.available)
-      return res
-        .status(400)
-        .json({ error: dateCheck.reason, availableSlots: [] });
+      return res.status(400).json({ error: dateCheck.reason, availableSlots: [] });
 
-    // Fetch confirmed bookings for the specific date + seating area
+    // Fetch bookings for the date
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
@@ -80,18 +78,13 @@ router.get("/slots", async (req, res) => {
       .gte("booking_date", date)
       .lte("booking_date", date);
 
-    if (error) {
-      console.error("Supabase error fetching bookings:", error);
-      return res.status(500).json({ error: "Failed to fetch bookings" });
-    }
+    console.log("Bookings data:", bookings, "Supabase error:", error);
 
-    // Loop through each available time slot and compute capacity
+    if (error) return res.status(500).json({ error: "Failed to fetch bookings" });
+
     const availableSlots = AVAILABLE_TIMES.map((time) => {
-      const timeBookings = bookings?.filter(
-        (b) => b.booking_time === time
-      ) || [];
+      const timeBookings = bookings?.filter((b) => b.booking_time === time) || [];
 
-      // Total guests already booked for this slot
       const bookedGuests = timeBookings.reduce((sum, booking) => {
         let count = 0;
         if (typeof booking.number_of_guests === "string") {
@@ -115,11 +108,12 @@ router.get("/slots", async (req, res) => {
     });
 
     res.json({ date, seatingArea, slots: availableSlots });
-  } catch (error) {
-    console.error("Error in /slots:", error);
+  } catch (err) {
+    console.error("Error in /slots:", err);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 /* Creates a new bookin and notifies backend  */
 router.post("/bookings", async (req, res) => {
