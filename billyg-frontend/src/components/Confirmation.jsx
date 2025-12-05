@@ -21,7 +21,7 @@ function useBookingSubmit() {
     setLoading(true);
 
     try {
-      const response = await fetch("https://booking-reservation-system.onrender.com/", {
+      const response = await fetch("https://booking-reservation-system.onrender.com/api/bookings", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
 
