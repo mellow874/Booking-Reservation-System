@@ -57,7 +57,6 @@ function isDateAvailable(dateString) {
 router.get("/slots", async (req, res) => {
   try {
     const { date, seatingArea } = req.query;
-    console.log("Slots request params:", req.query);
 
     if (!date || !seatingArea)
       return res.status(400).json({ error: "Missing required parameters" });
@@ -71,42 +70,31 @@ router.get("/slots", async (req, res) => {
         .status(400)
         .json({ error: dateCheck.reason, availableSlots: [] });
 
+    const startDate = new Date(date);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + 1);
+
     // Fetch bookings for the day and seating area
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
       .eq("seating_preference", seatingArea)
       .eq("status", "confirmed")
-      .gte("booking_date", date)
-      .lte("booking_date", date);
+      .gte("booking_date", startDate.toISOString())
+      .lt("booking_date", endDate.toISOString());
 
     console.log("Bookings fetched:", bookings, "Error:", error);
 
     if (error) return res.status(500).json({ error: "Failed to fetch bookings" });
 
-    const availableSlots = AVAILABLE_TIMES.map((time) => {
-      const timeBookings = bookings?.filter((b) => b.booking_time === time) || [];
+    const availableSlots = AVAILABLE_TIMES.map(time => {
+      const timeBookings = bookings?.filter(b => b.booking_time === time) || [];
 
-      const bookedGuests = timeBookings.reduce((sum, booking) => {
-        let count = 0;
-        if (typeof booking.number_of_guests === "string") {
-          const match = booking.number_of_guests.match(/\d+/);
-          count = match ? parseInt(match[0]) : 0;
-        } else if (typeof booking.number_of_guests === "number") {
-          count = booking.number_of_guests;
-        }
-        return sum + count;
-      }, 0);
-
+      const bookedGuests = timeBookings.reduce((sum, b) => sum + extractGuestCount(b.number_of_guests), 0);
       const maxCapacity = SEATING_CAPACITY[seatingArea];
       const remainingCapacity = Math.max(0, maxCapacity - bookedGuests);
 
-      return {
-        time,
-        available: remainingCapacity > 0,
-        remainingCapacity,
-        maxCapacity,
-      };
+      return { time, available: remainingCapacity > 0, remainingCapacity, maxCapacity };
     });
 
     res.json({ date, seatingArea, slots: availableSlots });
