@@ -71,7 +71,7 @@ router.get("/slots", async (req, res) => {
         .status(400)
         .json({ error: dateCheck.reason, availableSlots: [] });
 
-    // Fetch confirmed bookings for that date and seating area
+    // Fetch bookings for the day and seating area
     const { data: bookings, error } = await supabase
       .from("bookings")
       .select("booking_time, number_of_guests")
