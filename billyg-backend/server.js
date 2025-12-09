@@ -12,7 +12,8 @@ const PORT = process.env.PORT || 5000;
 app.use(cors({
   origin: [
     "https://booking-reservation-system.vercel.app", // ✅ FIXED typo
-    "http://localhost:5173"
+    "http://localhost:5173",
+    "http://localhost:5174"
   ],
   methods: ["GET", "POST", "PUT", "DELETE"],
   allowedHeaders: ["Content-Type"]
