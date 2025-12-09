@@ -91,6 +91,13 @@ router.get("/slots", (req, res) => {
  */
 router.post("/bookings", async (req, res) => {
   try {
+    // ✅ SAFETY CHECK
+    if (!req.body) {
+      return res.status(400).json({
+        error: "Request body is missing. Make sure Content-Type is application/json"
+      });
+    }
+
     const {
       booking_date,
       booking_time,
@@ -102,50 +109,27 @@ router.post("/bookings", async (req, res) => {
       special_requests,
     } = req.body;
 
-    // Basic validation
-    if (
-      !booking_date ||
-      !booking_time ||
-      !number_of_guests ||
-      !seating_preference ||
-      !customer_name ||
-      !customer_email ||
-      !customer_phone
-    )
-      return res.status(400).json({ error: "Missing required fields" });
-
-    // Validate seating and time (optional, keeps your rules)
-    if (!AVAILABLE_TIMES.includes(booking_time))
-      return res.status(400).json({ error: "Invalid time slot" });
-
-    if (!SEATING_AREAS.includes(seating_preference))
-      return res.status(400).json({ error: "Invalid seating area" });
-
-    // Mock booking ID
-    const bookingId = "mock-" + Date.now();
-
-    // Return mocked booking object
-    const newBooking = {
-      id: bookingId,
-      booking_date,
-      booking_time,
-      number_of_guests,
-      seating_preference,
-      customer_name,
-      customer_email,
-      customer_phone,
-      special_requests: special_requests || "",
-      status: "confirmed",
-    };
-
-    console.log("📩 MOCK BOOKING RECEIVED:", newBooking);
-
-    res.status(201).json({ message: "Booking created", booking: newBooking });
+    // ✅ MOCK RESPONSE (no database)
+    return res.status(201).json({
+      message: "Booking created (mock)",
+      booking: {
+        booking_date,
+        booking_time,
+        number_of_guests,
+        seating_preference,
+        customer_name,
+        customer_email,
+        customer_phone,
+        special_requests,
+        status: "confirmed"
+      }
+    });
   } catch (error) {
-    console.error(error);
+    console.error("POST /bookings error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
+
 
 
 /*
