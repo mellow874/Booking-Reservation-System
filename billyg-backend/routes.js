@@ -56,49 +56,76 @@ function isDateAvailable(dateString) {
  * GET /api/slots
  * Returns static availability (always available)
  */
+// GET /api/slots
 router.get("/slots", (req, res) => {
-  const { date, seatingArea } = req.query;
+  try {
+    const { date, seatingArea } = req.query;
 
-  if (!date || !seatingArea)
-    return res.status(400).json({ error: "Missing required parameters" });
+    if (!date || !seatingArea) {
+      return res.status(400).json({
+        error: "date and seatingArea are required"
+      });
+    }
 
-  if (!SEATING_AREAS.includes(seatingArea))
-    return res.status(400).json({ error: "Invalid seating area" });
+    const day = new Date(date).getDay();
 
-  const dateCheck = isDateAvailable(date);
-  if (!dateCheck.available)
-    return res.status(400).json({ error: dateCheck.reason });
+    // Sunday (0) or Saturday (6)
+    if (day === 0 || day === 6) {
+      return res.json({
+        error: "Restaurant closed on weekends",
+        availableSlots: []
+      });
+    }
 
-  const maxCapacity = SEATING_CAPACITY[seatingArea];
-
-  const slots = AVAILABLE_TIMES.map((time) => ({
-    time,
-    available: true,
-    remainingCapacity: maxCapacity,
-    maxCapacity,
-  }));
-
-  res.json({
-    date,
-    seatingArea,
-    slots,
-  });
+    // ✅ PURE MOCK SLOTS
+    return res.json({
+      date,
+      seatingArea,
+      slots: [
+        { time: "17:00", available: true },
+        { time: "18:00", available: true },
+        { time: "19:00", available: true }
+      ]
+    });
+  } catch (err) {
+    console.error("GET /slots error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 /*
  * POST /api/bookings
  * Mock booking creation
  */
-router.post("/bookings", async (req, res) => {
-  try {
-    // ✅ SAFETY CHECK
-    if (!req.body) {
-      return res.status(400).json({
-        error: "Request body is missing. Make sure Content-Type is application/json"
-      });
-    }
+// POST /api/bookings
+router.post("/bookings", (req, res) => {
+  console.log("✅ POST /bookings hit");
+  console.log("Headers:", req.headers);
+  console.log("Body:", req.body);
 
-    const {
+  // ✅ HARD SAFETY CHECK
+  if (!req.body || Object.keys(req.body).length === 0) {
+    return res.status(400).json({
+      error: "Request body is missing or empty. Send JSON with Content-Type: application/json"
+    });
+  }
+
+  // ✅ SAFE destructuring
+  const {
+    booking_date,
+    booking_time,
+    number_of_guests,
+    seating_preference,
+    customer_name,
+    customer_email,
+    customer_phone,
+    special_requests,
+  } = req.body;
+
+  // ✅ Mock response (no DB)
+  return res.status(201).json({
+    message: "Booking created (mock)",
+    booking: {
       booking_date,
       booking_time,
       number_of_guests,
@@ -107,27 +134,9 @@ router.post("/bookings", async (req, res) => {
       customer_email,
       customer_phone,
       special_requests,
-    } = req.body;
-
-    // ✅ MOCK RESPONSE (no database)
-    return res.status(201).json({
-      message: "Booking created (mock)",
-      booking: {
-        booking_date,
-        booking_time,
-        number_of_guests,
-        seating_preference,
-        customer_name,
-        customer_email,
-        customer_phone,
-        special_requests,
-        status: "confirmed"
-      }
-    });
-  } catch (error) {
-    console.error("POST /bookings error:", error);
-    res.status(500).json({ error: "Internal server error" });
-  }
+      status: "confirmed"
+    }
+  });
 });
 
 
