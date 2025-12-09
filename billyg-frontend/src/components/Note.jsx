@@ -1,23 +1,38 @@
-import React from 'react'
-import LocationOnIcon from '@mui/icons-material/LocationOn';
-import CallIcon from '@mui/icons-material/Call';
-import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import React from "react";
+import LocationOnIcon from "@mui/icons-material/LocationOn";
+import CallIcon from "@mui/icons-material/Call";
+import AccessTimeIcon from "@mui/icons-material/AccessTime";
 
 export default function Note() {
   return (
-    <div className='grid grid-cols-3 gap-6 bg-rose-700 p-6 text-white'>
-
+    <div
+      className="
+        grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3
+        gap-6
+        bg-rose-700
+        p-4 sm:p-6
+        text-white
+      "
+    >
       {/* Location */}
-      <div className='flex flex-col items-center justify-center text-center space-y-2 mb-70'>
-        <LocationOnIcon className='text-white' style={{ fontSize: "6rem" }} />
-        <p>Shop 56, Montecasino</p>
+      <div className="flex flex-col items-center justify-center text-center space-y-2">
+        <LocationOnIcon sx={{ fontSize: { xs: "3rem", sm: "4rem", lg: "6rem" } }} />
+        <p className="text-sm sm:text-base">Shop 56, Montecasino</p>
       </div>
 
       {/* Time Slots */}
-      <div className='flex flex-col items-center justify-center text-center space-y-2 border-l-2'>
-        <AccessTimeIcon className='text-white' style={{ fontSize: "6rem" }} />
+      <div
+        className="
+          flex flex-col items-center justify-center text-center space-y-2
+          lg:border-l-2
+          sm:border-l-2 lg:border-r-0
+          border-white
+          px-2
+        "
+      >
+        <AccessTimeIcon sx={{ fontSize: { xs: "3rem", sm: "4rem", lg: "6rem" } }} />
 
-        <ul className='space-y-1'>
+        <ul className="space-y-1 text-xs sm:text-sm">
           <li>Monday & Tuesday: Closed</li>
           <li>Wednesday to Friday</li>
           <li>12H00 to 16H00</li>
@@ -33,15 +48,22 @@ export default function Note() {
       </div>
 
       {/* Contact */}
-      <div className='flex flex-col items-center justify-center text-center space-y-2 border-l-2'>
-        <div className='mb-70'>
-            <CallIcon className='text-white' style={{ fontSize: "6rem" }} />
-            <p>+27 11 510 7924</p>
-            <a className='underline'>Montecasino.billyg@tsogosun.com</a>
-        </div>
-        
+      <div
+        className="
+          flex flex-col items-center justify-center text-center space-y-2
+          lg:border-l-2
+          border-white
+        "
+      >
+        <CallIcon sx={{ fontSize: { xs: "3rem", sm: "4rem", lg: "6rem" } }} />
+        <p className="text-sm sm:text-base">+27 11 510 7924</p>
+        <a
+          href="mailto:Montecasino.billyg@tsogosun.com"
+          className="underline text-xs sm:text-sm break-all"
+        >
+          Montecasino.billyg@tsogosun.com
+        </a>
       </div>
-
     </div>
   );
 }
