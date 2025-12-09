@@ -1,3 +1,4 @@
+console.log("✅ ROUTES FILE LOADED - MOCK VERSION");
 // routes.js
 import express from "express";
 
